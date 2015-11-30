@@ -115,7 +115,7 @@ Class Game Extends App
 	Method UpdateZoom:Void(delta:Float)
 		Const maxScale:= 2.0
 		
-		Local minScale:= (deviceWidth / MAX_SIZE)
+		Local minScale:= (deviceWidth / MAX_SIZE) / 2.0
 		
 		zoom = Clamp(zoom+delta, minScale, maxScale)
 		
@@ -123,18 +123,16 @@ Class Game Extends App
 	End
 	
 	Method UpdateSelection:Void()
-		' Local variable(s):
-		Local MX:= MouseX()
-		Local MY:= MouseY()
-		
 		' Not the best way to structure the code, but it works:
 		If (MouseHit(MOUSE_LEFT)) Then
+			' Local variable(s):
+			Local MX:= MouseX()
+			Local MY:= MouseY()
+			
 			mapMatrix.Invert()
 			
 			Local RealMX:= mapMatrix.TransformPointX(MX, MY)
 			Local RealMY:= mapMatrix.TransformPointY(MX, MY)
-			
-			Print("RealM: " + RealMX + ", " + RealMY)
 			
 			Local SelectingMultiple:= (KeyDown(KEY_CONTROL) > 0)
 			Local Success:= SelectingMultiple
@@ -225,7 +223,7 @@ Class Game Extends App
 	
 	Method OnRender:Int()
 		' Clear the screen.
-		Cls()
+		Cls(255.0, 255.0, 255.0)
 		
 		' Render the world:
 		PushMatrix()
