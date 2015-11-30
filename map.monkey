@@ -1,12 +1,16 @@
 Strict
 
 ' Preprocessor related:
+#MAP_DEMO_LOCAL_IMPORT = True
 
 ' Imports:
 Import mojo
 
-' Change this next line to simply 'matrix2d' if you're just trying it out.
-Import regal.matrix2d
+#If MAP_DEMO_LOCAL_IMPORT
+	Import matrix2d
+#Else
+	Import regal.matrix2d
+#End
 
 ' Functions:
 Function Main:Int()
@@ -128,6 +132,8 @@ Class Game Extends App
 			
 			Local RealMX:= mapMatrix.TransformPointX(MX, MY)
 			Local RealMY:= mapMatrix.TransformPointY(MX, MY)
+			
+			Print("RealM: " + RealMX + ", " + RealMY)
 			
 			Local SelectingMultiple:= (KeyDown(KEY_CONTROL) > 0)
 			Local Success:= SelectingMultiple
