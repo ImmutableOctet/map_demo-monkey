@@ -1,7 +1,12 @@
 Strict
 
+' Preprocessor related:
+
 ' Imports:
 Import mojo
+
+' Change this next line to simply 'matrix2d' if you're just trying it out.
+Import regal.matrix2d
 
 ' Functions:
 Function Main:Int()
@@ -35,8 +40,14 @@ Class Game Extends App
 	Field deviceWidth:Float, deviceHeight:Float
 	Field hDeviceWidth:Float, hDeviceHeight:Float
 	
+	Field mapMatrix:Matrix2D
+	
+	' Pay no attention to this array, it's just here because I'm paranoid about memory allocation.
+	Field __matrixCache:Float[6]
+	
 	' Meta (Collections):
 	Field markerList:List<MapMarker>
+	Field selectedMarkers:List<MapMarker>
 	
 	' Constructor(s):
 	Method OnCreate:Int()
@@ -74,6 +85,8 @@ Class Game Extends App
 		cameraX = hDeviceWidth
 		cameraY = hDeviceHeight
 		
+		mapMatrix = New Matrix2D()
+		
 		' Uncomment these to immediately see the effects of centered viewports:
 		'mapX = cameraX
 		'mapY = cameraY
@@ -84,6 +97,7 @@ Class Game Extends App
 	Method MakeMarkers:Void()
 		' Create our markers:
 		markerList = New List<MapMarker>()
+		selectedMarkers = New List<MapMarker>()
 		
 		For Local I:= 1 To 50 ' 0 Until 50
 			markerList.AddLast(New MapMarker(Rnd(0, MAX_SIZE), Rnd(0, MAX_SIZE)))
@@ -99,6 +113,53 @@ Class Game Extends App
 		Local minScale:= (deviceWidth / MAX_SIZE)
 		
 		zoom = Clamp(zoom+delta, minScale, maxScale)
+		
+		Return
+	End
+	
+	Method UpdateSelection:Void()
+		' Local variable(s):
+		Local MX:= MouseX()
+		Local MY:= MouseY()
+		
+		' Not the best way to structure the code, but it works:
+		If (MouseHit(MOUSE_LEFT)) Then
+			mapMatrix.Invert()
+			
+			Local RealMX:= mapMatrix.TransformPointX(MX, MY)
+			Local RealMY:= mapMatrix.TransformPointY(MX, MY)
+			
+			Local SelectingMultiple:= (KeyDown(KEY_CONTROL) > 0)
+			Local Success:= SelectingMultiple
+			
+			' This is very inefficient, but since we don't have a realistic environment, we aren't going to use a quadtree:
+			For Local m:= Eachin markerList
+				' For now, this just a radius check. A somewhat bad one at that:
+				If (Abs(RealMX - m.x) < m.size And Abs(RealMY - m.y) < m.size) Then
+					Local containsThis:= selectedMarkers.Contains(m)
+					
+					If (SelectingMultiple) Then
+						If (Not containsThis) Then
+							selectedMarkers.AddLast(m)
+						Else
+							selectedMarkers.RemoveEach(m)
+						Endif
+					Elseif (Not containsThis) Then
+						selectedMarkers.Clear()
+						selectedMarkers.AddLast(m)
+					Endif
+					
+					' We at least touched one.
+					Success = True
+					
+					Exit
+				Endif
+			Next
+			
+			If (Not Success) Then
+				selectedMarkers.Clear()
+			Endif
+		Endif
 		
 		Return
 	End
@@ -148,8 +209,8 @@ Class Game Extends App
 	
 	Method OnUpdate:Int()
 		UpdateScreen()
-		
 		Controls()
+		UpdateSelection()
 		
 		' Return the default response.
 		Return 0
@@ -185,6 +246,10 @@ Class Game Extends App
 		
 		Translate(mapX, mapY)
 		
+		' A bit of a hack, but it works:
+		GetMatrix(__matrixCache)
+		mapMatrix.Set(__matrixCache)
+		
 		Local frame:Int = 0
 		
 		For Local Y:Int = 0 To 7
@@ -206,7 +271,7 @@ Class Game Extends App
 	
 	Method RenderMarkers:Void()
 		For Local m:= Eachin markerList
-			m.Draw()
+			m.Draw(selectedMarkers.Contains(m))
 		Next
 		
 		Return
@@ -216,20 +281,30 @@ End
 Class MapMarker
 	' Fields:
 	Field x:Float, y:Float
-	Field ox:Float, oy:Float
-	Field size:Float = 10
+	'Field ox:Float, oy:Float
+	
+	Field size:Float = 10.0
 	
 	' Constructor(s):
 	Method New(x:Float, y:Float)
 		Self.x = x
 		Self.y = y
-		Self.ox = x
-		Self.oy = y
+		
+		'Self.ox = x
+		'Self.oy = y
 	End
 	
 	' Methods:
-	Method Draw:Void(offsetX:Float=0.0, offsetY:Float=0.0)
-		DrawOval((x - size / 2) - offsetX, (y - size / 2) - offsetY, size, size)
+	Method Draw:Void(selected:Bool, offsetX:Float=0.0, offsetY:Float=0.0)
+		If (selected) Then
+			SetColor(0.0, 205.0, 0.0)
+		Else
+			SetColor(205.0, 0.0, 0.0)
+		Endif
+		
+		DrawCircle(x, y, size)
+		
+		SetColor(255.0, 255.0, 255.0)
 		
 		Return
 	End
