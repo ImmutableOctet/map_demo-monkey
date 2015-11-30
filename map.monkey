@@ -2,6 +2,7 @@ Strict
 
 ' Preprocessor related:
 #MAP_DEMO_LOCAL_IMPORT = True
+#MATRIX2D_VECTOR = False
 
 ' Imports:
 Import mojo
